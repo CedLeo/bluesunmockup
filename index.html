@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BlueSun Systems Mockup</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div id="topnav"></div>
+
+    <main class="page">
+      <div class="page-header">
+        <div>
+          <h1>Proposed Systems for BlueSun</h1>
+          <p class="subtitle">
+            Click into any system below to try. This is a clickable prototype
+            only data is stored in your browser and resets if you click "Reset
+            Demo Data".
+          </p>
+        </div>
+        <button class="btn btn-secondary" id="resetBtn">Reset Demo Data</button>
+      </div>
+
+      <div class="system-grid">
+        <a
+          class="system-card"
+          href="inventory.html"
+          style="text-decoration: none; color: inherit"
+        >
+          <div class="icon">📦</div>
+          <h2>Inventory Management</h2>
+          <p>
+            Keep a single, up-to-date view of solar hardware stock — panels,
+            inverters, batteries, mounting, and cabling — with low-stock alerts
+            so nothing gets oversold.
+          </p>
+          <span class="btn btn-primary">Open System →</span>
+        </a>
+
+        <a
+          class="system-card"
+          href="orders.html"
+          style="text-decoration: none; color: inherit"
+        >
+          <div class="icon">🧾</div>
+          <h2>Order Fulfillment</h2>
+          <p>
+            Track every order from accepted quotation through delivery and
+            installation, with an invoice calculator that auto-splits the 50/50
+            milestone payments and flags missing payments.
+          </p>
+          <span class="btn btn-primary">Open System →</span>
+        </a>
+
+        <a
+          class="system-card"
+          href="surveys.html"
+          style="text-decoration: none; color: inherit"
+        >
+          <div class="icon">🏠</div>
+          <h2>Site Surveying Manager</h2>
+          <p>
+            Capture consistent, structured site-visit data — roof details,
+            photos, feasibility notes — so quoting and scheduling isn't stuck
+            waiting on scattered notes.
+          </p>
+          <span class="btn btn-primary">Open System →</span>
+        </a>
+      </div>
+    </main>
+
+    <script src="js/data.js"></script>
+    <script src="js/nav.js"></script>
+    <script>
+      renderNav("home");
+      document.getElementById("resetBtn").addEventListener("click", () => {
+        if (confirm("Reset all demo data back to the original sample data?")) {
+          resetAllData();
+          alert("Demo data reset.");
+          location.reload();
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Site Surveying Manager — BlueSun</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="topnav"></div>
+
+  <main class="page">
+    <div class="page-header">
+      <div>
+        <h1>Site Surveying Manager</h1>
+        <p class="subtitle">
+          Capture consistent, structured site-visit data so office staff can
+          prepare quotations and scheduling without chasing scattered notes
+          and photos.
+        </p>
+      </div>
+      <button class="btn btn-primary" id="newSurveyBtn">+ Schedule Survey</button>
+    </div>
+
+    <div class="card">
+      <div class="flex-between" style="margin-bottom: 14px;">
+        <h2 style="margin:0;">Surveys</h2>
+        <select id="statusFilter" style="padding:8px 10px; border:1px solid var(--border); border-radius:6px;">
+          <option value="">All Statuses</option>
+          <option value="scheduled">Scheduled</option>
+          <option value="completed">Completed</option>
+          <option value="needs_followup">Needs Follow-up</option>
+        </select>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Address</th>
+            <th>Surveyor</th>
+            <th>Visit Date</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="surveysTbody"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none;">No surveys match this filter.</div>
+    </div>
+  </main>
+
+  <!-- New Survey Modal -->
+  <div class="modal-overlay hidden" id="newSurveyOverlay">
+    <div class="modal">
+      <h2>Schedule Survey</h2>
+      <form id="newSurveyForm">
+        <div class="form-grid">
+          <div class="field span-2">
+            <label for="nsClientName">Client Name</label>
+            <input type="text" id="nsClientName" required />
+          </div>
+          <div class="field span-2">
+            <label for="nsAddress">Address</label>
+            <input type="text" id="nsAddress" required />
+          </div>
+          <div class="field">
+            <label for="nsSurveyor">Assigned Surveyor</label>
+            <input type="text" id="nsSurveyor" required />
+          </div>
+          <div class="field">
+            <label for="nsVisitDate">Visit Date</label>
+            <input type="date" id="nsVisitDate" required />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Schedule Survey</button>
+          <button type="button" class="btn btn-secondary" id="cancelNewSurveyBtn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Survey Detail Modal -->
+  <div class="modal-overlay hidden" id="detailOverlay">
+    <div class="modal" style="max-width:680px;">
+      <div class="flex-between">
+        <h2 class="mt-0" id="detailClientName">Client</h2>
+        <button class="btn btn-secondary btn-sm" id="closeDetailBtn">Close</button>
+      </div>
+      <p class="text-muted" id="detailMeta"></p>
+
+      <form id="detailForm">
+        <div class="form-grid">
+          <div class="field">
+            <label for="dRoofType">Roof Type / Material</label>
+            <input type="text" id="dRoofType" placeholder="e.g. Concrete flat roof" />
+          </div>
+          <div class="field">
+            <label for="dOrientation">Roof Orientation</label>
+            <input type="text" id="dOrientation" placeholder="e.g. South-facing" />
+          </div>
+          <div class="field">
+            <label for="dUsableArea">Usable Roof Area</label>
+            <input type="text" id="dUsableArea" placeholder="e.g. 45 sqm" />
+          </div>
+          <div class="field">
+            <label for="dPanelCount">Estimated Panel Count</label>
+            <input type="number" id="dPanelCount" min="0" />
+          </div>
+          <div class="field span-2">
+            <label for="dShading">Shading Obstructions</label>
+            <textarea id="dShading" placeholder="e.g. Minor shading from a tree on the west side"></textarea>
+          </div>
+          <div class="field span-2">
+            <label for="dElectrical">Existing Electrical Setup Notes</label>
+            <textarea id="dElectrical" placeholder="e.g. Existing 100A panel, spare breaker slots"></textarea>
+          </div>
+          <div class="field span-2">
+            <label>Special Requirements</label>
+            <div class="checkbox-list">
+              <label><input type="checkbox" value="extra_mounting" class="special-req" /> Extra mounting hardware</label>
+              <label><input type="checkbox" value="crane_access" class="special-req" /> Crane access needed</label>
+              <label><input type="checkbox" value="permit_concerns" class="special-req" /> Permit concerns</label>
+              <label><input type="checkbox" value="electrical_upgrade" class="special-req" /> Electrical upgrade needed</label>
+            </div>
+          </div>
+          <div class="field span-2">
+            <label for="dFeasibility">Feasibility Notes</label>
+            <textarea id="dFeasibility" placeholder="Overall assessment of whether/how the install can proceed"></textarea>
+          </div>
+          <div class="field">
+            <label for="dStatus">Survey Status</label>
+            <select id="dStatus">
+              <option value="scheduled">Scheduled</option>
+              <option value="completed">Completed</option>
+              <option value="needs_followup">Needs Follow-up</option>
+            </select>
+          </div>
+        </div>
+
+        <h2 style="margin-top:16px;">Site Photos</h2>
+        <p class="text-muted" style="margin-top:-6px; font-size:0.85rem;">
+          Mockup only — photos are shown as labeled placeholders, no real file upload.
+        </p>
+        <div id="photosGrid" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;"></div>
+        <button type="button" class="btn btn-secondary btn-sm" id="addPhotoBtn">+ Add Photo Placeholder</button>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save Survey</button>
+          <button type="button" class="btn btn-danger" id="deleteSurveyBtn">Delete Survey</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+    renderNav("surveys");
+
+    let currentSurveyId = null;
+    let currentPhotos = [];
+
+    function statusBadgeClass(status) {
+      switch (status) {
+        case "scheduled": return "badge-blue";
+        case "completed": return "badge-green";
+        case "needs_followup": return "badge-orange";
+        default: return "badge-gray";
+      }
+    }
+
+    function statusLabel(status) {
+      switch (status) {
+        case "scheduled": return "Scheduled";
+        case "completed": return "Completed";
+        case "needs_followup": return "Needs Follow-up";
+        default: return status;
+      }
+    }
+
+    function renderSurveysTable() {
+      const filter = document.getElementById("statusFilter").value;
+      let surveys = Surveys.all().sort((a, b) => new Date(b.visitDate) - new Date(a.visitDate));
+      if (filter) surveys = surveys.filter((s) => s.status === filter);
+
+      const tbody = document.getElementById("surveysTbody");
+      const emptyState = document.getElementById("emptyState");
+
+      if (surveys.length === 0) {
+        tbody.innerHTML = "";
+        emptyState.style.display = "block";
+        return;
+      }
+      emptyState.style.display = "none";
+
+      tbody.innerHTML = surveys
+        .map(
+          (s) => `
+        <tr data-id="${s.id}">
+          <td>${s.clientName}</td>
+          <td>${s.address}</td>
+          <td>${s.surveyor}</td>
+          <td>${formatDate(s.visitDate)}</td>
+          <td><span class="badge ${statusBadgeClass(s.status)}">${statusLabel(s.status)}</span></td>
+          <td><button class="btn btn-secondary btn-sm view-btn" data-id="${s.id}">View</button></td>
+        </tr>
+      `
+        )
+        .join("");
+
+      tbody.querySelectorAll("tr").forEach((row) => {
+        row.addEventListener("click", (e) => {
+          if (e.target.classList.contains("view-btn")) return;
+          openDetail(row.dataset.id);
+        });
+      });
+      tbody.querySelectorAll(".view-btn").forEach((btn) => {
+        btn.addEventListener("click", () => openDetail(btn.dataset.id));
+      });
+    }
+
+    document.getElementById("statusFilter").addEventListener("change", renderSurveysTable);
+
+    function refreshAll() {
+      renderSurveysTable();
+    }
+
+    // ---------- New Survey modal ----------
+
+    const newSurveyOverlay = document.getElementById("newSurveyOverlay");
+
+    document.getElementById("newSurveyBtn").addEventListener("click", () => {
+      document.getElementById("newSurveyForm").reset();
+      newSurveyOverlay.classList.remove("hidden");
+    });
+    document.getElementById("cancelNewSurveyBtn").addEventListener("click", () => newSurveyOverlay.classList.add("hidden"));
+
+    document.getElementById("newSurveyForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const survey = {
+        id: genId("survey"),
+        clientName: document.getElementById("nsClientName").value.trim(),
+        address: document.getElementById("nsAddress").value.trim(),
+        surveyor: document.getElementById("nsSurveyor").value.trim(),
+        visitDate: document.getElementById("nsVisitDate").value,
+        status: "scheduled",
+        roofType: "",
+        orientation: "",
+        usableArea: "",
+        shading: "",
+        electricalNotes: "",
+        estimatedPanelCount: "",
+        feasibilityNotes: "",
+        specialRequirements: [],
+        photos: [],
+      };
+      Surveys.save(survey);
+      newSurveyOverlay.classList.add("hidden");
+      refreshAll();
+    });
+
+    // ---------- Survey detail modal ----------
+
+    const detailOverlay = document.getElementById("detailOverlay");
+
+    function openDetail(id) {
+      currentSurveyId = id;
+      renderDetail();
+      detailOverlay.classList.remove("hidden");
+    }
+
+    function renderPhotosGrid() {
+      const grid = document.getElementById("photosGrid");
+      if (currentPhotos.length === 0) {
+        grid.innerHTML = `<span class="text-muted" style="font-size:0.85rem;">No photos added yet.</span>`;
+        return;
+      }
+      grid.innerHTML = currentPhotos
+        .map(
+          (p, idx) => `
+        <div style="width:100px; height:80px; background:#eceff2; border:1px solid var(--border); border-radius:6px; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; font-size:0.75rem; color:var(--text-muted);">
+          📷<br/>${p}
+          <button type="button" data-idx="${idx}" class="remove-photo" style="position:absolute; top:2px; right:2px; border:none; background:transparent; cursor:pointer; color:var(--red); font-weight:700;">×</button>
+        </div>
+      `
+        )
+        .join("");
+      grid.querySelectorAll(".remove-photo").forEach((btn) =>
+        btn.addEventListener("click", (e) => {
+          currentPhotos.splice(Number(e.target.dataset.idx), 1);
+          renderPhotosGrid();
+        })
+      );
+    }
+
+    document.getElementById("addPhotoBtn").addEventListener("click", () => {
+      const label = prompt("Label for this photo placeholder (e.g. 'Roof - north side'):", `Photo ${currentPhotos.length + 1}`);
+      if (label) {
+        currentPhotos.push(label);
+        renderPhotosGrid();
+      }
+    });
+
+    function renderDetail() {
+      const survey = Surveys.get(currentSurveyId);
+      if (!survey) {
+        detailOverlay.classList.add("hidden");
+        return;
+      }
+      document.getElementById("detailClientName").textContent = survey.clientName;
+      document.getElementById("detailMeta").textContent =
+        `${survey.address} · Surveyor: ${survey.surveyor} · Visit: ${formatDate(survey.visitDate)}`;
+
+      document.getElementById("dRoofType").value = survey.roofType || "";
+      document.getElementById("dOrientation").value = survey.orientation || "";
+      document.getElementById("dUsableArea").value = survey.usableArea || "";
+      document.getElementById("dPanelCount").value = survey.estimatedPanelCount || "";
+      document.getElementById("dShading").value = survey.shading || "";
+      document.getElementById("dElectrical").value = survey.electricalNotes || "";
+      document.getElementById("dFeasibility").value = survey.feasibilityNotes || "";
+      document.getElementById("dStatus").value = survey.status || "scheduled";
+
+      document.querySelectorAll(".special-req").forEach((cb) => {
+        cb.checked = (survey.specialRequirements || []).includes(cb.value);
+      });
+
+      currentPhotos = [...(survey.photos || [])];
+      renderPhotosGrid();
+    }
+
+    document.getElementById("closeDetailBtn").addEventListener("click", () => detailOverlay.classList.add("hidden"));
+
+    document.getElementById("detailForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const survey = Surveys.get(currentSurveyId);
+      if (!survey) return;
+
+      survey.roofType = document.getElementById("dRoofType").value.trim();
+      survey.orientation = document.getElementById("dOrientation").value.trim();
+      survey.usableArea = document.getElementById("dUsableArea").value.trim();
+      survey.estimatedPanelCount = document.getElementById("dPanelCount").value;
+      survey.shading = document.getElementById("dShading").value.trim();
+      survey.electricalNotes = document.getElementById("dElectrical").value.trim();
+      survey.feasibilityNotes = document.getElementById("dFeasibility").value.trim();
+      survey.status = document.getElementById("dStatus").value;
+      survey.specialRequirements = [...document.querySelectorAll(".special-req")]
+        .filter((cb) => cb.checked)
+        .map((cb) => cb.value);
+      survey.photos = currentPhotos;
+
+      Surveys.save(survey);
+      detailOverlay.classList.add("hidden");
+      refreshAll();
+    });
+
+    document.getElementById("deleteSurveyBtn").addEventListener("click", () => {
+      const survey = Surveys.get(currentSurveyId);
+      if (!survey) return;
+      if (confirm(`Delete survey for "${survey.clientName}"?`)) {
+        Surveys.remove(survey.id);
+        detailOverlay.classList.add("hidden");
+        refreshAll();
+      }
+    });
+
+    refreshAll();
+  </script>
+</body>
+</html>

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventory Management — BlueSun</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="topnav"></div>
+
+  <main class="page">
+    <div class="page-header">
+      <div>
+        <h1>Inventory Management</h1>
+        <p class="subtitle">
+          Single source of truth for solar hardware stock, so staff aren't
+          manually tracking counts or guessing what's available to promise a
+          customer.
+        </p>
+      </div>
+      <button class="btn btn-primary" id="addItemBtn">+ Add Item</button>
+    </div>
+
+    <div class="card-row" id="statsRow"></div>
+
+    <div class="card">
+      <div class="flex-between" style="margin-bottom: 14px;">
+        <h2 style="margin:0;">Stock List</h2>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="searchInput" placeholder="Search by name or SKU..." style="padding:8px 10px; border:1px solid var(--border); border-radius:6px; min-width:220px;" />
+          <select id="categoryFilter" style="padding:8px 10px; border:1px solid var(--border); border-radius:6px;">
+            <option value="">All Categories</option>
+          </select>
+        </div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Category</th>
+            <th>SKU</th>
+            <th>Qty on Hand</th>
+            <th>Unit Price</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="itemsTbody"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none;">No items match your search.</div>
+    </div>
+  </main>
+
+  <!-- Add / Edit Item Modal -->
+  <div class="modal-overlay hidden" id="itemModalOverlay">
+    <div class="modal">
+      <h2 id="itemModalTitle">Add Item</h2>
+      <form id="itemForm">
+        <input type="hidden" id="itemId" />
+        <div class="form-grid">
+          <div class="field span-2">
+            <label for="itemName">Item Name</label>
+            <input type="text" id="itemName" required />
+          </div>
+          <div class="field">
+            <label for="itemCategory">Category</label>
+            <input type="text" id="itemCategory" placeholder="e.g. Panels, Inverters" required />
+          </div>
+          <div class="field">
+            <label for="itemSku">SKU</label>
+            <input type="text" id="itemSku" required />
+          </div>
+          <div class="field">
+            <label for="itemCost">Unit Cost</label>
+            <input type="number" id="itemCost" min="0" step="0.01" required />
+          </div>
+          <div class="field">
+            <label for="itemPrice">Unit Price</label>
+            <input type="number" id="itemPrice" min="0" step="0.01" required />
+          </div>
+          <div class="field">
+            <label for="itemQty">Quantity on Hand</label>
+            <input type="number" id="itemQty" min="0" step="1" required />
+          </div>
+          <div class="field">
+            <label for="itemThreshold">Reorder Threshold</label>
+            <input type="number" id="itemThreshold" min="0" step="1" required />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save Item</button>
+          <button type="button" class="btn btn-secondary" id="cancelItemBtn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Item Detail / Adjust Stock Modal -->
+  <div class="modal-overlay hidden" id="detailModalOverlay">
+    <div class="modal">
+      <div class="flex-between">
+        <h2 id="detailName" class="mt-0">Item</h2>
+        <button class="btn btn-secondary btn-sm" id="editItemBtn">Edit</button>
+      </div>
+      <p class="text-muted" id="detailMeta"></p>
+
+      <div class="card-row" style="margin-top:12px;">
+        <div class="card">
+          <div class="stat-label">Qty on Hand</div>
+          <div class="stat-value" id="detailQty">0</div>
+        </div>
+        <div class="card">
+          <div class="stat-label">Unit Price</div>
+          <div class="stat-value" id="detailPrice">$0</div>
+        </div>
+        <div class="card">
+          <div class="stat-label">Reorder Threshold</div>
+          <div class="stat-value" id="detailThreshold">0</div>
+        </div>
+      </div>
+
+      <div class="card" style="background:#f8fafc;">
+        <h2>Adjust Stock</h2>
+        <div class="form-grid">
+          <div class="field">
+            <label for="adjustQty">Quantity Change</label>
+            <input type="number" id="adjustQty" step="1" placeholder="e.g. 10 or -5" />
+          </div>
+          <div class="field">
+            <label for="adjustReason">Reason</label>
+            <select id="adjustReason">
+              <option value="Received shipment">Received shipment</option>
+              <option value="Damaged/lost goods">Damaged/lost goods</option>
+              <option value="Stock correction">Stock correction</option>
+              <option value="Used on order">Used on order</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" id="applyAdjustBtn">Apply Adjustment</button>
+        </div>
+      </div>
+
+      <h2>Recent Adjustments</h2>
+      <table class="data-table">
+        <thead>
+          <tr><th>Date</th><th>Change</th><th>Reason</th><th>Staff</th></tr>
+        </thead>
+        <tbody id="adjustmentsTbody"></tbody>
+      </table>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-danger" id="deleteItemBtn">Delete Item</button>
+        <button type="button" class="btn btn-secondary" id="closeDetailBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+    renderNav("inventory");
+
+    let currentDetailId = null;
+
+    function renderStats() {
+      const items = Inventory.all();
+      const totalValue = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+      const lowStockCount = items.filter((i) => i.quantity <= i.reorderThreshold && i.quantity > 0).length;
+      const outOfStockCount = items.filter((i) => i.quantity === 0).length;
+
+      document.getElementById("statsRow").innerHTML = `
+        <div class="card">
+          <div class="stat-label">Total Inventory Value</div>
+          <div class="stat-value">${formatCurrency(totalValue)}</div>
+        </div>
+        <div class="card">
+          <div class="stat-label">Total Items</div>
+          <div class="stat-value">${items.length}</div>
+        </div>
+        <div class="card">
+          <div class="stat-label">Low Stock</div>
+          <div class="stat-value" style="color: var(--orange);">${lowStockCount}</div>
+        </div>
+        <div class="card">
+          <div class="stat-label">Out of Stock</div>
+          <div class="stat-value" style="color: var(--red);">${outOfStockCount}</div>
+        </div>
+      `;
+    }
+
+    function statusBadge(item) {
+      if (item.quantity === 0) return `<span class="badge badge-red">Out of Stock</span>`;
+      if (item.quantity <= item.reorderThreshold) return `<span class="badge badge-orange">Low Stock</span>`;
+      return `<span class="badge badge-green">In Stock</span>`;
+    }
+
+    function populateCategoryFilter() {
+      const select = document.getElementById("categoryFilter");
+      const current = select.value;
+      const categories = [...new Set(Inventory.all().map((i) => i.category))].sort();
+      select.innerHTML = `<option value="">All Categories</option>` +
+        categories.map((c) => `<option value="${c}">${c}</option>`).join("");
+      select.value = current;
+    }
+
+    function renderTable() {
+      const search = document.getElementById("searchInput").value.trim().toLowerCase();
+      const category = document.getElementById("categoryFilter").value;
+      let items = Inventory.all();
+
+      if (search) {
+        items = items.filter(
+          (i) => i.name.toLowerCase().includes(search) || i.sku.toLowerCase().includes(search)
+        );
+      }
+      if (category) {
+        items = items.filter((i) => i.category === category);
+      }
+
+      const tbody = document.getElementById("itemsTbody");
+      const emptyState = document.getElementById("emptyState");
+
+      if (items.length === 0) {
+        tbody.innerHTML = "";
+        emptyState.style.display = "block";
+        return;
+      }
+      emptyState.style.display = "none";
+
+      tbody.innerHTML = items
+        .map(
+          (item) => `
+        <tr class="${item.quantity <= item.reorderThreshold ? "row-alert" : ""}" data-id="${item.id}">
+          <td>${item.name}</td>
+          <td>${item.category}</td>
+          <td>${item.sku}</td>
+          <td>${item.quantity}</td>
+          <td>${formatCurrency(item.unitPrice)}</td>
+          <td>${statusBadge(item)}</td>
+          <td><button class="btn btn-secondary btn-sm view-btn" data-id="${item.id}">View</button></td>
+        </tr>
+      `
+        )
+        .join("");
+
+      tbody.querySelectorAll("tr").forEach((row) => {
+        row.addEventListener("click", (e) => {
+          if (e.target.classList.contains("view-btn")) return;
+          openDetail(row.dataset.id);
+        });
+      });
+      tbody.querySelectorAll(".view-btn").forEach((btn) => {
+        btn.addEventListener("click", () => openDetail(btn.dataset.id));
+      });
+    }
+
+    function refreshAll() {
+      renderStats();
+      populateCategoryFilter();
+      renderTable();
+    }
+
+    document.getElementById("searchInput").addEventListener("input", renderTable);
+    document.getElementById("categoryFilter").addEventListener("change", renderTable);
+
+    // ---------- Add / Edit item modal ----------
+
+    const itemModalOverlay = document.getElementById("itemModalOverlay");
+    const itemForm = document.getElementById("itemForm");
+
+    function openItemModal(item) {
+      document.getElementById("itemModalTitle").textContent = item ? "Edit Item" : "Add Item";
+      document.getElementById("itemId").value = item ? item.id : "";
+      document.getElementById("itemName").value = item ? item.name : "";
+      document.getElementById("itemCategory").value = item ? item.category : "";
+      document.getElementById("itemSku").value = item ? item.sku : "";
+      document.getElementById("itemCost").value = item ? item.unitCost : "";
+      document.getElementById("itemPrice").value = item ? item.unitPrice : "";
+      document.getElementById("itemQty").value = item ? item.quantity : 0;
+      document.getElementById("itemThreshold").value = item ? item.reorderThreshold : 5;
+      itemModalOverlay.classList.remove("hidden");
+    }
+
+    document.getElementById("addItemBtn").addEventListener("click", () => openItemModal(null));
+    document.getElementById("cancelItemBtn").addEventListener("click", () => itemModalOverlay.classList.add("hidden"));
+
+    itemForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const id = document.getElementById("itemId").value || genId("item");
+      const existing = Inventory.get(id);
+      const item = {
+        id,
+        name: document.getElementById("itemName").value.trim(),
+        category: document.getElementById("itemCategory").value.trim(),
+        sku: document.getElementById("itemSku").value.trim(),
+        unitCost: Number(document.getElementById("itemCost").value),
+        unitPrice: Number(document.getElementById("itemPrice").value),
+        quantity: Number(document.getElementById("itemQty").value),
+        reorderThreshold: Number(document.getElementById("itemThreshold").value),
+        adjustments: existing ? existing.adjustments : [],
+      };
+      Inventory.save(item);
+      itemModalOverlay.classList.add("hidden");
+      refreshAll();
+    });
+
+    // ---------- Detail / adjust stock modal ----------
+
+    const detailModalOverlay = document.getElementById("detailModalOverlay");
+
+    function openDetail(id) {
+      currentDetailId = id;
+      renderDetail();
+      detailModalOverlay.classList.remove("hidden");
+    }
+
+    function renderDetail() {
+      const item = Inventory.get(currentDetailId);
+      if (!item) {
+        detailModalOverlay.classList.add("hidden");
+        return;
+      }
+      document.getElementById("detailName").textContent = item.name;
+      document.getElementById("detailMeta").textContent = `${item.category} · SKU: ${item.sku}`;
+      document.getElementById("detailQty").textContent = item.quantity;
+      document.getElementById("detailPrice").textContent = formatCurrency(item.unitPrice);
+      document.getElementById("detailThreshold").textContent = item.reorderThreshold;
+
+      const adjustments = item.adjustments || [];
+      const tbody = document.getElementById("adjustmentsTbody");
+      tbody.innerHTML = adjustments.length
+        ? adjustments
+            .map(
+              (a) => `
+          <tr>
+            <td>${formatDate(a.date)}</td>
+            <td style="color: ${a.delta >= 0 ? "var(--green)" : "var(--red)"};">${a.delta >= 0 ? "+" : ""}${a.delta}</td>
+            <td>${a.reason}</td>
+            <td>${a.staff}</td>
+          </tr>
+        `
+            )
+            .join("")
+        : `<tr><td colspan="4" class="text-muted">No adjustments recorded yet.</td></tr>`;
+    }
+
+    document.getElementById("closeDetailBtn").addEventListener("click", () => detailModalOverlay.classList.add("hidden"));
+
+    document.getElementById("editItemBtn").addEventListener("click", () => {
+      const item = Inventory.get(currentDetailId);
+      detailModalOverlay.classList.add("hidden");
+      openItemModal(item);
+    });
+
+    document.getElementById("deleteItemBtn").addEventListener("click", () => {
+      const item = Inventory.get(currentDetailId);
+      if (!item) return;
+      if (confirm(`Delete "${item.name}" from inventory?`)) {
+        Inventory.remove(item.id);
+        detailModalOverlay.classList.add("hidden");
+        refreshAll();
+      }
+    });
+
+    document.getElementById("applyAdjustBtn").addEventListener("click", () => {
+      const delta = Number(document.getElementById("adjustQty").value);
+      const reason = document.getElementById("adjustReason").value;
+      if (!delta) {
+        alert("Enter a non-zero quantity change.");
+        return;
+      }
+      Inventory.adjustStock(currentDetailId, delta, reason, "Demo User");
+      document.getElementById("adjustQty").value = "";
+      renderDetail();
+      refreshAll();
+    });
+
+    refreshAll();
+  </script>
+</body>
+</html>
