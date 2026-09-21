@@ -1,219 +1,297 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Order Fulfillment — BlueSun</title>
-  <link rel="stylesheet" href="css/style.css" />
-</head>
-<body>
-  <div id="topnav"></div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Order Fulfillment — BlueSun</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div id="topnav"></div>
 
-  <main class="page">
-    <div class="page-header">
-      <div>
-        <h1>Order Fulfillment</h1>
-        <p class="subtitle">
-          Track each order from accepted quotation through installation, with
-          an invoice calculator that auto-splits the 50/50 milestone payments
-          and flags missing payments before dispatch.
-        </p>
-      </div>
-      <button class="btn btn-primary" id="newOrderBtn">+ New Order</button>
-    </div>
-
-    <div class="card">
-      <div class="flex-between" style="margin-bottom: 14px;">
-        <h2 style="margin:0;">Orders</h2>
-        <select id="statusFilter" style="padding:8px 10px; border:1px solid var(--border); border-radius:6px;">
-          <option value="">All Statuses</option>
-        </select>
-      </div>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Order #</th>
-            <th>Client</th>
-            <th>Status</th>
-            <th>Total</th>
-            <th>Paid</th>
-            <th>Current Stage Since</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="ordersTbody"></tbody>
-      </table>
-      <div class="empty-state" id="emptyState" style="display:none;">No orders match this filter.</div>
-    </div>
-  </main>
-
-  <!-- New Order Modal -->
-  <div class="modal-overlay hidden" id="newOrderOverlay">
-    <div class="modal" style="max-width:640px;">
-      <h2>New Order</h2>
-      <form id="newOrderForm">
-        <div class="form-grid">
-          <div class="field span-2">
-            <label for="clientName">Client Name</label>
-            <input type="text" id="clientName" required />
-          </div>
-          <div class="field span-2">
-            <label for="clientAddress">Site Address</label>
-            <input type="text" id="clientAddress" required />
-          </div>
+    <main class="page">
+      <div class="page-header">
+        <div>
+          <h1>Order Fulfillment</h1>
+          <p class="subtitle">
+            Track each order from accepted quotation through installation, with
+            an invoice calculator that auto-splits the 50/50 milestone payments
+            and flags missing payments before dispatch.
+          </p>
         </div>
-
-        <h2 style="margin-top:18px;">Line Items</h2>
-        <div id="lineItemsContainer"></div>
-        <button type="button" class="btn btn-secondary btn-sm" id="addLineItemBtn" style="margin-top:8px;">+ Add Line Item</button>
-
-        <h2 style="margin-top:18px;">Add-ons / Extra Charges</h2>
-        <div id="addonsContainer"></div>
-        <button type="button" class="btn btn-secondary btn-sm" id="addAddonBtn" style="margin-top:8px;">+ Add Charge</button>
-
-        <div class="card" style="background:#f8fafc; margin-top:18px;">
-          <div class="flex-between"><span>Total Project Cost</span><strong id="newOrderTotal">$0.00</strong></div>
-          <div class="flex-between text-muted"><span>50% Down Payment</span><span id="newOrderDown">$0.00</span></div>
-          <div class="flex-between text-muted"><span>50% Completion Payment</span><span id="newOrderCompletion">$0.00</span></div>
-        </div>
-
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary">Create Order</button>
-          <button type="button" class="btn btn-secondary" id="cancelNewOrderBtn">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Order Detail Modal -->
-  <div class="modal-overlay hidden" id="detailOverlay">
-    <div class="modal" style="max-width:700px;">
-      <div class="flex-between">
-        <h2 class="mt-0" id="detailClientName">Client</h2>
-        <button class="btn btn-secondary btn-sm" id="closeDetailBtn">Close</button>
-      </div>
-      <p class="text-muted" id="detailAddress"></p>
-
-      <div class="stepper" id="stepper"></div>
-
-      <div id="alertArea"></div>
-
-      <div class="card-row">
-        <div class="card">
-          <div class="stat-label">Total Project Cost</div>
-          <div class="stat-value" id="detailTotal">$0.00</div>
-        </div>
-        <div class="card">
-          <div class="stat-label">Amount Paid</div>
-          <div class="stat-value" id="detailPaid">$0.00</div>
-        </div>
-        <div class="card">
-          <div class="stat-label">Amount Outstanding</div>
-          <div class="stat-value" id="detailOutstanding">$0.00</div>
-        </div>
+        <button class="btn btn-primary" id="newOrderBtn">+ New Order</button>
       </div>
 
-      <h2>Line Items</h2>
-      <table class="data-table">
-        <thead><tr><th>Item</th><th>Qty</th><th>Unit Price</th><th>Subtotal</th></tr></thead>
-        <tbody id="detailLineItemsTbody"></tbody>
-      </table>
-
-      <h2>Add-ons</h2>
-      <table class="data-table">
-        <thead><tr><th>Description</th><th>Amount</th></tr></thead>
-        <tbody id="detailAddonsTbody"></tbody>
-      </table>
-
-      <h2>Payments</h2>
-      <table class="data-table" style="margin-bottom:10px;">
-        <thead><tr><th>Milestone</th><th>Amount</th><th>Method</th><th>Date</th></tr></thead>
-        <tbody id="detailPaymentsTbody"></tbody>
-      </table>
-
-      <div class="card" style="background:#f8fafc;" id="paymentFormCard">
-        <h2>Record a Payment</h2>
-        <div class="form-grid">
-          <div class="field">
-            <label for="paymentMilestone">Milestone</label>
-            <select id="paymentMilestone">
-              <option value="down">Down Payment (50%)</option>
-              <option value="completion">Completion Payment (50%)</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="paymentMethod">Method</label>
-            <select id="paymentMethod">
-              <option value="cash">Cash</option>
-              <option value="bank_transfer">Bank Transfer</option>
+      <div class="card">
+        <div class="page-header" style="margin-bottom: 14px">
+          <h2 style="margin: 0">Orders</h2>
+          <div class="filter-bar">
+            <select id="statusFilter">
+              <option value="">All Statuses</option>
             </select>
           </div>
         </div>
-        <div class="form-actions">
-          <button type="button" class="btn btn-primary" id="recordPaymentBtn">Record Payment</button>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order #</th>
+                <th>Client</th>
+                <th>Status</th>
+                <th>Total</th>
+                <th>Paid</th>
+                <th>Current Stage Since</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="ordersTbody"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="emptyState" style="display: none">
+          No orders match this filter.
         </div>
       </div>
+    </main>
 
-      <div class="form-actions">
-        <button type="button" class="btn btn-primary" id="advanceStatusBtn">Advance to Next Stage →</button>
-        <button type="button" class="btn btn-danger" id="deleteOrderBtn">Delete Order</button>
+    <!-- New Order Modal -->
+    <div class="modal-overlay hidden" id="newOrderOverlay">
+      <div class="modal" style="max-width: 640px">
+        <h2>New Order</h2>
+        <form id="newOrderForm">
+          <div class="form-grid">
+            <div class="field span-2">
+              <label for="clientName">Client Name</label>
+              <input type="text" id="clientName" required />
+            </div>
+            <div class="field span-2">
+              <label for="clientAddress">Site Address</label>
+              <input type="text" id="clientAddress" required />
+            </div>
+          </div>
+
+          <h2 style="margin-top: 18px">Line Items</h2>
+          <div id="lineItemsContainer"></div>
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm"
+            id="addLineItemBtn"
+            style="margin-top: 8px"
+          >
+            + Add Line Item
+          </button>
+
+          <h2 style="margin-top: 18px">Add-ons / Extra Charges</h2>
+          <div id="addonsContainer"></div>
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm"
+            id="addAddonBtn"
+            style="margin-top: 8px"
+          >
+            + Add Charge
+          </button>
+
+          <div class="card" style="background: #f8fafc; margin-top: 18px">
+            <div class="flex-between">
+              <span>Total Project Cost</span
+              ><strong id="newOrderTotal">$0.00</strong>
+            </div>
+            <div class="flex-between text-muted">
+              <span>50% Down Payment</span><span id="newOrderDown">$0.00</span>
+            </div>
+            <div class="flex-between text-muted">
+              <span>50% Completion Payment</span
+              ><span id="newOrderCompletion">$0.00</span>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Create Order</button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="cancelNewOrderBtn"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
       </div>
     </div>
-  </div>
 
-  <script src="js/data.js"></script>
-  <script src="js/nav.js"></script>
-  <script>
-    renderNav("orders");
+    <!-- Order Detail Modal -->
+    <div class="modal-overlay hidden" id="detailOverlay">
+      <div class="modal" style="max-width: 700px">
+        <div class="flex-between">
+          <h2 class="mt-0" id="detailClientName">Client</h2>
+          <button class="btn btn-secondary btn-sm" id="closeDetailBtn">
+            Close
+          </button>
+        </div>
+        <p class="text-muted" id="detailAddress"></p>
 
-    let currentOrderId = null;
-    const inventoryItems = Inventory.all();
+        <div class="stepper" id="stepper"></div>
 
-    function statusBadgeClass(statusKey) {
-      switch (statusKey) {
-        case "pending": return "badge-gray";
-        case "preparing": return "badge-orange";
-        case "out_for_delivery": return "badge-blue";
-        case "installation": return "badge-blue";
-        case "completed": return "badge-green";
-        default: return "badge-gray";
+        <div id="alertArea"></div>
+
+        <div class="card-row">
+          <div class="card">
+            <div class="stat-label">Total Project Cost</div>
+            <div class="stat-value" id="detailTotal">$0.00</div>
+          </div>
+          <div class="card">
+            <div class="stat-label">Amount Paid</div>
+            <div class="stat-value" id="detailPaid">$0.00</div>
+          </div>
+          <div class="card">
+            <div class="stat-label">Amount Outstanding</div>
+            <div class="stat-value" id="detailOutstanding">$0.00</div>
+          </div>
+        </div>
+
+        <h2>Line Items</h2>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Unit Price</th>
+                <th>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody id="detailLineItemsTbody"></tbody>
+          </table>
+        </div>
+
+        <h2>Add-ons</h2>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody id="detailAddonsTbody"></tbody>
+          </table>
+        </div>
+
+        <h2>Payments</h2>
+        <div class="table-scroll">
+          <table class="data-table" style="margin-bottom: 10px">
+            <thead>
+              <tr>
+                <th>Milestone</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="detailPaymentsTbody"></tbody>
+          </table>
+        </div>
+
+        <div class="card" style="background: #f8fafc" id="paymentFormCard">
+          <h2>Record a Payment</h2>
+          <div class="form-grid">
+            <div class="field">
+              <label for="paymentMilestone">Milestone</label>
+              <select id="paymentMilestone">
+                <option value="down">Down Payment (50%)</option>
+                <option value="completion">Completion Payment (50%)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="paymentMethod">Method</label>
+              <select id="paymentMethod">
+                <option value="cash">Cash</option>
+                <option value="bank_transfer">Bank Transfer</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-primary" id="recordPaymentBtn">
+              Record Payment
+            </button>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" id="advanceStatusBtn">
+            Advance to Next Stage →
+          </button>
+          <button type="button" class="btn btn-danger" id="deleteOrderBtn">
+            Delete Order
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/nav.js"></script>
+    <script>
+      renderNav("orders");
+
+      let currentOrderId = null;
+      const inventoryItems = Inventory.all();
+
+      function statusBadgeClass(statusKey) {
+        switch (statusKey) {
+          case "pending":
+            return "badge-gray";
+          case "preparing":
+            return "badge-orange";
+          case "out_for_delivery":
+            return "badge-blue";
+          case "installation":
+            return "badge-blue";
+          case "completed":
+            return "badge-green";
+          default:
+            return "badge-gray";
+        }
       }
-    }
 
-    function statusLabel(key) {
-      const s = ORDER_STATUSES.find((s) => s.key === key);
-      return s ? s.label : key;
-    }
-
-    function populateStatusFilter() {
-      const select = document.getElementById("statusFilter");
-      const current = select.value;
-      select.innerHTML = `<option value="">All Statuses</option>` +
-        ORDER_STATUSES.map((s) => `<option value="${s.key}">${s.label}</option>`).join("");
-      select.value = current;
-    }
-
-    function renderOrdersTable() {
-      const filter = document.getElementById("statusFilter").value;
-      let orders = Orders.all().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      if (filter) orders = orders.filter((o) => o.status === filter);
-
-      const tbody = document.getElementById("ordersTbody");
-      const emptyState = document.getElementById("emptyState");
-
-      if (orders.length === 0) {
-        tbody.innerHTML = "";
-        emptyState.style.display = "block";
-        return;
+      function statusLabel(key) {
+        const s = ORDER_STATUSES.find((s) => s.key === key);
+        return s ? s.label : key;
       }
-      emptyState.style.display = "none";
 
-      tbody.innerHTML = orders
-        .map((order) => {
-          const total = Orders.computeTotal(order);
-          const paid = Orders.amountPaid(order);
-          const shortId = order.id.split("-")[1] || order.id;
-          return `
+      function populateStatusFilter() {
+        const select = document.getElementById("statusFilter");
+        const current = select.value;
+        select.innerHTML =
+          `<option value="">All Statuses</option>` +
+          ORDER_STATUSES.map(
+            (s) => `<option value="${s.key}">${s.label}</option>`,
+          ).join("");
+        select.value = current;
+      }
+
+      function renderOrdersTable() {
+        const filter = document.getElementById("statusFilter").value;
+        let orders = Orders.all().sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+        );
+        if (filter) orders = orders.filter((o) => o.status === filter);
+
+        const tbody = document.getElementById("ordersTbody");
+        const emptyState = document.getElementById("emptyState");
+
+        if (orders.length === 0) {
+          tbody.innerHTML = "";
+          emptyState.style.display = "block";
+          return;
+        }
+        emptyState.style.display = "none";
+
+        tbody.innerHTML = orders
+          .map((order) => {
+            const total = Orders.computeTotal(order);
+            const paid = Orders.amountPaid(order);
+            const shortId = order.id.split("-")[1] || order.id;
+            return `
             <tr data-id="${order.id}">
               <td>#${shortId}</td>
               <td>${order.clientName}</td>
@@ -224,46 +302,53 @@
               <td><button class="btn btn-secondary btn-sm view-btn" data-id="${order.id}">View</button></td>
             </tr>
           `;
-        })
-        .join("");
-
-      tbody.querySelectorAll("tr").forEach((row) => {
-        row.addEventListener("click", (e) => {
-          if (e.target.classList.contains("view-btn")) return;
-          openDetail(row.dataset.id);
-        });
-      });
-      tbody.querySelectorAll(".view-btn").forEach((btn) => {
-        btn.addEventListener("click", () => openDetail(btn.dataset.id));
-      });
-    }
-
-    document.getElementById("statusFilter").addEventListener("change", renderOrdersTable);
-
-    function refreshAll() {
-      populateStatusFilter();
-      renderOrdersTable();
-    }
-
-    // ---------- New Order modal ----------
-
-    const newOrderOverlay = document.getElementById("newOrderOverlay");
-    let lineItemRows = [];
-    let addonRows = [];
-
-    function itemOptionsHtml(selectedId) {
-      return `<option value="">Select item...</option>` +
-        inventoryItems
-          .map((i) => `<option value="${i.id}" ${i.id === selectedId ? "selected" : ""}>${i.name} (${formatCurrency(i.unitPrice)})</option>`)
+          })
           .join("");
-    }
 
-    function renderLineItemRows() {
-      const container = document.getElementById("lineItemsContainer");
-      container.innerHTML = lineItemRows
-        .map(
-          (row, idx) => `
-        <div class="form-grid" style="grid-template-columns: 2fr 1fr auto; align-items:end; margin-bottom:8px;">
+        tbody.querySelectorAll("tr").forEach((row) => {
+          row.addEventListener("click", (e) => {
+            if (e.target.classList.contains("view-btn")) return;
+            openDetail(row.dataset.id);
+          });
+        });
+        tbody.querySelectorAll(".view-btn").forEach((btn) => {
+          btn.addEventListener("click", () => openDetail(btn.dataset.id));
+        });
+      }
+
+      document
+        .getElementById("statusFilter")
+        .addEventListener("change", renderOrdersTable);
+
+      function refreshAll() {
+        populateStatusFilter();
+        renderOrdersTable();
+      }
+
+      // ---------- New Order modal ----------
+
+      const newOrderOverlay = document.getElementById("newOrderOverlay");
+      let lineItemRows = [];
+      let addonRows = [];
+
+      function itemOptionsHtml(selectedId) {
+        return (
+          `<option value="">Select item...</option>` +
+          inventoryItems
+            .map(
+              (i) =>
+                `<option value="${i.id}" ${i.id === selectedId ? "selected" : ""}>${i.name} (${formatCurrency(i.unitPrice)})</option>`,
+            )
+            .join("")
+        );
+      }
+
+      function renderLineItemRows() {
+        const container = document.getElementById("lineItemsContainer");
+        container.innerHTML = lineItemRows
+          .map(
+            (row, idx) => `
+        <div class="row-with-remove">
           <div class="field">
             <label>Item</label>
             <select data-idx="${idx}" class="line-item-select">${itemOptionsHtml(row.itemId)}</select>
@@ -274,37 +359,38 @@
           </div>
           <button type="button" class="btn btn-danger btn-sm remove-line-item" data-idx="${idx}">Remove</button>
         </div>
-      `
-        )
-        .join("");
+      `,
+          )
+          .join("");
 
-      container.querySelectorAll(".line-item-select").forEach((el) =>
-        el.addEventListener("change", (e) => {
-          lineItemRows[e.target.dataset.idx].itemId = e.target.value;
-          recalcNewOrderTotals();
-        })
-      );
-      container.querySelectorAll(".line-item-qty").forEach((el) =>
-        el.addEventListener("input", (e) => {
-          lineItemRows[e.target.dataset.idx].qty = Number(e.target.value) || 1;
-          recalcNewOrderTotals();
-        })
-      );
-      container.querySelectorAll(".remove-line-item").forEach((el) =>
-        el.addEventListener("click", (e) => {
-          lineItemRows.splice(Number(e.target.dataset.idx), 1);
-          renderLineItemRows();
-          recalcNewOrderTotals();
-        })
-      );
-    }
+        container.querySelectorAll(".line-item-select").forEach((el) =>
+          el.addEventListener("change", (e) => {
+            lineItemRows[e.target.dataset.idx].itemId = e.target.value;
+            recalcNewOrderTotals();
+          }),
+        );
+        container.querySelectorAll(".line-item-qty").forEach((el) =>
+          el.addEventListener("input", (e) => {
+            lineItemRows[e.target.dataset.idx].qty =
+              Number(e.target.value) || 1;
+            recalcNewOrderTotals();
+          }),
+        );
+        container.querySelectorAll(".remove-line-item").forEach((el) =>
+          el.addEventListener("click", (e) => {
+            lineItemRows.splice(Number(e.target.dataset.idx), 1);
+            renderLineItemRows();
+            recalcNewOrderTotals();
+          }),
+        );
+      }
 
-    function renderAddonRows() {
-      const container = document.getElementById("addonsContainer");
-      container.innerHTML = addonRows
-        .map(
-          (row, idx) => `
-        <div class="form-grid" style="grid-template-columns: 2fr 1fr auto; align-items:end; margin-bottom:8px;">
+      function renderAddonRows() {
+        const container = document.getElementById("addonsContainer");
+        container.innerHTML = addonRows
+          .map(
+            (row, idx) => `
+        <div class="row-with-remove">
           <div class="field">
             <label>Description</label>
             <input type="text" value="${row.description}" data-idx="${idx}" class="addon-desc" placeholder="e.g. Installation labor" />
@@ -315,230 +401,295 @@
           </div>
           <button type="button" class="btn btn-danger btn-sm remove-addon" data-idx="${idx}">Remove</button>
         </div>
-      `
-        )
-        .join("");
+      `,
+          )
+          .join("");
 
-      container.querySelectorAll(".addon-desc").forEach((el) =>
-        el.addEventListener("input", (e) => {
-          addonRows[e.target.dataset.idx].description = e.target.value;
-        })
-      );
-      container.querySelectorAll(".addon-amount").forEach((el) =>
-        el.addEventListener("input", (e) => {
-          addonRows[e.target.dataset.idx].amount = Number(e.target.value) || 0;
-          recalcNewOrderTotals();
-        })
-      );
-      container.querySelectorAll(".remove-addon").forEach((el) =>
-        el.addEventListener("click", (e) => {
-          addonRows.splice(Number(e.target.dataset.idx), 1);
-          renderAddonRows();
-          recalcNewOrderTotals();
-        })
-      );
-    }
-
-    function recalcNewOrderTotals() {
-      const lineTotal = lineItemRows.reduce((sum, row) => {
-        const item = inventoryItems.find((i) => i.id === row.itemId);
-        return sum + (item ? item.unitPrice * row.qty : 0);
-      }, 0);
-      const addonTotal = addonRows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
-      const total = lineTotal + addonTotal;
-      document.getElementById("newOrderTotal").textContent = formatCurrency(total);
-      document.getElementById("newOrderDown").textContent = formatCurrency(total / 2);
-      document.getElementById("newOrderCompletion").textContent = formatCurrency(total / 2);
-    }
-
-    document.getElementById("newOrderBtn").addEventListener("click", () => {
-      document.getElementById("newOrderForm").reset();
-      lineItemRows = [{ itemId: "", qty: 1 }];
-      addonRows = [];
-      renderLineItemRows();
-      renderAddonRows();
-      recalcNewOrderTotals();
-      newOrderOverlay.classList.remove("hidden");
-    });
-
-    document.getElementById("cancelNewOrderBtn").addEventListener("click", () => newOrderOverlay.classList.add("hidden"));
-    document.getElementById("addLineItemBtn").addEventListener("click", () => {
-      lineItemRows.push({ itemId: "", qty: 1 });
-      renderLineItemRows();
-    });
-    document.getElementById("addAddonBtn").addEventListener("click", () => {
-      addonRows.push({ description: "", amount: 0 });
-      renderAddonRows();
-    });
-
-    document.getElementById("newOrderForm").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const validLineItems = lineItemRows.filter((r) => r.itemId);
-      if (validLineItems.length === 0) {
-        alert("Add at least one line item with an inventory item selected.");
-        return;
+        container.querySelectorAll(".addon-desc").forEach((el) =>
+          el.addEventListener("input", (e) => {
+            addonRows[e.target.dataset.idx].description = e.target.value;
+          }),
+        );
+        container.querySelectorAll(".addon-amount").forEach((el) =>
+          el.addEventListener("input", (e) => {
+            addonRows[e.target.dataset.idx].amount =
+              Number(e.target.value) || 0;
+            recalcNewOrderTotals();
+          }),
+        );
+        container.querySelectorAll(".remove-addon").forEach((el) =>
+          el.addEventListener("click", (e) => {
+            addonRows.splice(Number(e.target.dataset.idx), 1);
+            renderAddonRows();
+            recalcNewOrderTotals();
+          }),
+        );
       }
-      const order = {
-        id: genId("order"),
-        clientName: document.getElementById("clientName").value.trim(),
-        address: document.getElementById("clientAddress").value.trim(),
-        status: "pending",
-        createdAt: new Date().toISOString(),
-        statusChangedAt: new Date().toISOString(),
-        statusHistory: [{ status: "pending", date: new Date().toISOString() }],
-        lineItems: validLineItems.map((r) => {
-          const item = inventoryItems.find((i) => i.id === r.itemId);
-          return { itemId: item.id, name: item.name, qty: r.qty, unitPrice: item.unitPrice };
-        }),
-        addons: addonRows.filter((a) => a.description && a.amount > 0),
-        payments: [],
-      };
-      Orders.save(order);
-      newOrderOverlay.classList.add("hidden");
-      refreshAll();
-    });
 
-    // ---------- Order detail modal ----------
+      function recalcNewOrderTotals() {
+        const lineTotal = lineItemRows.reduce((sum, row) => {
+          const item = inventoryItems.find((i) => i.id === row.itemId);
+          return sum + (item ? item.unitPrice * row.qty : 0);
+        }, 0);
+        const addonTotal = addonRows.reduce(
+          (sum, row) => sum + Number(row.amount || 0),
+          0,
+        );
+        const total = lineTotal + addonTotal;
+        document.getElementById("newOrderTotal").textContent =
+          formatCurrency(total);
+        document.getElementById("newOrderDown").textContent = formatCurrency(
+          total / 2,
+        );
+        document.getElementById("newOrderCompletion").textContent =
+          formatCurrency(total / 2);
+      }
 
-    const detailOverlay = document.getElementById("detailOverlay");
+      document.getElementById("newOrderBtn").addEventListener("click", () => {
+        document.getElementById("newOrderForm").reset();
+        lineItemRows = [{ itemId: "", qty: 1 }];
+        addonRows = [];
+        renderLineItemRows();
+        renderAddonRows();
+        recalcNewOrderTotals();
+        newOrderOverlay.classList.remove("hidden");
+      });
 
-    function openDetail(id) {
-      currentOrderId = id;
-      renderDetail();
-      detailOverlay.classList.remove("hidden");
-    }
+      document
+        .getElementById("cancelNewOrderBtn")
+        .addEventListener("click", () =>
+          newOrderOverlay.classList.add("hidden"),
+        );
+      document
+        .getElementById("addLineItemBtn")
+        .addEventListener("click", () => {
+          lineItemRows.push({ itemId: "", qty: 1 });
+          renderLineItemRows();
+        });
+      document.getElementById("addAddonBtn").addEventListener("click", () => {
+        addonRows.push({ description: "", amount: 0 });
+        renderAddonRows();
+      });
 
-    function renderStepper(order) {
-      const currentIdx = Orders.statusIndex(order);
-      const stepper = document.getElementById("stepper");
-      stepper.innerHTML = ORDER_STATUSES.map((s, idx) => {
-        let cls = "step";
-        if (idx < currentIdx) cls += " done";
-        if (idx === currentIdx) cls += " current";
-        return `
+      document
+        .getElementById("newOrderForm")
+        .addEventListener("submit", (e) => {
+          e.preventDefault();
+          const validLineItems = lineItemRows.filter((r) => r.itemId);
+          if (validLineItems.length === 0) {
+            alert(
+              "Add at least one line item with an inventory item selected.",
+            );
+            return;
+          }
+          const order = {
+            id: genId("order"),
+            clientName: document.getElementById("clientName").value.trim(),
+            address: document.getElementById("clientAddress").value.trim(),
+            status: "pending",
+            createdAt: new Date().toISOString(),
+            statusChangedAt: new Date().toISOString(),
+            statusHistory: [
+              { status: "pending", date: new Date().toISOString() },
+            ],
+            lineItems: validLineItems.map((r) => {
+              const item = inventoryItems.find((i) => i.id === r.itemId);
+              return {
+                itemId: item.id,
+                name: item.name,
+                qty: r.qty,
+                unitPrice: item.unitPrice,
+              };
+            }),
+            addons: addonRows.filter((a) => a.description && a.amount > 0),
+            payments: [],
+          };
+          Orders.save(order);
+          newOrderOverlay.classList.add("hidden");
+          refreshAll();
+        });
+
+      // ---------- Order detail modal ----------
+
+      const detailOverlay = document.getElementById("detailOverlay");
+
+      function openDetail(id) {
+        currentOrderId = id;
+        renderDetail();
+        detailOverlay.classList.remove("hidden");
+      }
+
+      function renderStepper(order) {
+        const currentIdx = Orders.statusIndex(order);
+        const stepper = document.getElementById("stepper");
+        stepper.innerHTML = ORDER_STATUSES.map((s, idx) => {
+          let cls = "step";
+          if (idx < currentIdx) cls += " done";
+          if (idx === currentIdx) cls += " current";
+          return `
           <div class="${cls}">
             <div class="circle">${idx < currentIdx ? "✓" : idx + 1}</div>
             <div class="label">${s.label}</div>
           </div>
         `;
-      }).join("");
-    }
-
-    function renderDetail() {
-      const order = Orders.get(currentOrderId);
-      if (!order) {
-        detailOverlay.classList.add("hidden");
-        return;
+        }).join("");
       }
 
-      document.getElementById("detailClientName").textContent = order.clientName;
-      document.getElementById("detailAddress").textContent = order.address;
-      renderStepper(order);
+      function renderDetail() {
+        const order = Orders.get(currentOrderId);
+        if (!order) {
+          detailOverlay.classList.add("hidden");
+          return;
+        }
 
-      const total = Orders.computeTotal(order);
-      const paid = Orders.amountPaid(order);
-      document.getElementById("detailTotal").textContent = formatCurrency(total);
-      document.getElementById("detailPaid").textContent = formatCurrency(paid);
-      document.getElementById("detailOutstanding").textContent = formatCurrency(total - paid);
+        document.getElementById("detailClientName").textContent =
+          order.clientName;
+        document.getElementById("detailAddress").textContent = order.address;
+        renderStepper(order);
 
-      document.getElementById("detailLineItemsTbody").innerHTML = order.lineItems
-        .map(
-          (li) => `
+        const total = Orders.computeTotal(order);
+        const paid = Orders.amountPaid(order);
+        document.getElementById("detailTotal").textContent =
+          formatCurrency(total);
+        document.getElementById("detailPaid").textContent =
+          formatCurrency(paid);
+        document.getElementById("detailOutstanding").textContent =
+          formatCurrency(total - paid);
+
+        document.getElementById("detailLineItemsTbody").innerHTML =
+          order.lineItems
+            .map(
+              (li) => `
         <tr><td>${li.name}</td><td>${li.qty}</td><td>${formatCurrency(li.unitPrice)}</td><td>${formatCurrency(li.qty * li.unitPrice)}</td></tr>
-      `
-        )
-        .join("") || `<tr><td colspan="4" class="text-muted">No line items.</td></tr>`;
+      `,
+            )
+            .join("") ||
+          `<tr><td colspan="4" class="text-muted">No line items.</td></tr>`;
 
-      document.getElementById("detailAddonsTbody").innerHTML = (order.addons || [])
-        .map((a) => `<tr><td>${a.description}</td><td>${formatCurrency(a.amount)}</td></tr>`)
-        .join("") || `<tr><td colspan="2" class="text-muted">No add-ons.</td></tr>`;
+        document.getElementById("detailAddonsTbody").innerHTML =
+          (order.addons || [])
+            .map(
+              (a) =>
+                `<tr><td>${a.description}</td><td>${formatCurrency(a.amount)}</td></tr>`,
+            )
+            .join("") ||
+          `<tr><td colspan="2" class="text-muted">No add-ons.</td></tr>`;
 
-      document.getElementById("detailPaymentsTbody").innerHTML = (order.payments || [])
-        .map(
-          (p) => `
+        document.getElementById("detailPaymentsTbody").innerHTML =
+          (order.payments || [])
+            .map(
+              (p) => `
         <tr>
           <td>${p.milestone === "down" ? "Down Payment (50%)" : "Completion Payment (50%)"}</td>
           <td>${formatCurrency(p.amount)}</td>
           <td>${p.method === "cash" ? "Cash" : "Bank Transfer"}</td>
           <td>${formatDate(p.date)}</td>
         </tr>
-      `
-        )
-        .join("") || `<tr><td colspan="4" class="text-muted">No payments recorded yet.</td></tr>`;
+      `,
+            )
+            .join("") ||
+          `<tr><td colspan="4" class="text-muted">No payments recorded yet.</td></tr>`;
 
-      // Alerts: payment validation warning
-      const alertArea = document.getElementById("alertArea");
-      const downConfirmed = Orders.isDownPaymentConfirmed(order);
-      const completionConfirmed = Orders.isCompletionPaymentConfirmed(order);
-      let alertsHtml = "";
-      if ((order.status === "preparing" || Orders.statusIndex(order) > ORDER_STATUSES.findIndex(s=>s.key==="preparing")) && !downConfirmed) {
-        alertsHtml += `<div class="alert alert-warning">⚠ Down payment (50%) is not confirmed for this order. Dispatch should be held until payment is recorded.</div>`;
+        // Alerts: payment validation warning
+        const alertArea = document.getElementById("alertArea");
+        const downConfirmed = Orders.isDownPaymentConfirmed(order);
+        const completionConfirmed = Orders.isCompletionPaymentConfirmed(order);
+        let alertsHtml = "";
+        if (
+          (order.status === "preparing" ||
+            Orders.statusIndex(order) >
+              ORDER_STATUSES.findIndex((s) => s.key === "preparing")) &&
+          !downConfirmed
+        ) {
+          alertsHtml += `<div class="alert alert-warning">⚠ Down payment (50%) is not confirmed for this order. Dispatch should be held until payment is recorded.</div>`;
+        }
+        if (order.status === "completed" && !completionConfirmed) {
+          alertsHtml += `<div class="alert alert-warning">⚠ Completion payment (50%) is not confirmed even though the order is marked Completed.</div>`;
+        }
+        alertArea.innerHTML = alertsHtml;
+
+        // Advance button state
+        const advanceBtn = document.getElementById("advanceStatusBtn");
+        const check = Orders.canAdvance(order);
+        if (order.status === "completed") {
+          advanceBtn.textContent = "Order Completed";
+          advanceBtn.disabled = true;
+        } else {
+          const nextStatus = ORDER_STATUSES[Orders.statusIndex(order) + 1];
+          advanceBtn.textContent = `Advance to "${nextStatus.label}" →`;
+          advanceBtn.disabled = !check.ok;
+          advanceBtn.title = check.ok ? "" : check.reason;
+        }
+
+        // suggested payment amount
+        document.getElementById("paymentMilestone").value = downConfirmed
+          ? "completion"
+          : "down";
       }
-      if (order.status === "completed" && !completionConfirmed) {
-        alertsHtml += `<div class="alert alert-warning">⚠ Completion payment (50%) is not confirmed even though the order is marked Completed.</div>`;
-      }
-      alertArea.innerHTML = alertsHtml;
 
-      // Advance button state
-      const advanceBtn = document.getElementById("advanceStatusBtn");
-      const check = Orders.canAdvance(order);
-      if (order.status === "completed") {
-        advanceBtn.textContent = "Order Completed";
-        advanceBtn.disabled = true;
-      } else {
-        const nextStatus = ORDER_STATUSES[Orders.statusIndex(order) + 1];
-        advanceBtn.textContent = `Advance to "${nextStatus.label}" →`;
-        advanceBtn.disabled = !check.ok;
-        advanceBtn.title = check.ok ? "" : check.reason;
-      }
+      document
+        .getElementById("closeDetailBtn")
+        .addEventListener("click", () => detailOverlay.classList.add("hidden"));
 
-      // suggested payment amount
-      document.getElementById("paymentMilestone").value = downConfirmed ? "completion" : "down";
-    }
+      document
+        .getElementById("advanceStatusBtn")
+        .addEventListener("click", () => {
+          const order = Orders.get(currentOrderId);
+          const result = Orders.advance(order);
+          if (!result.ok) {
+            alert(result.reason);
+            return;
+          }
+          renderDetail();
+          refreshAll();
+        });
 
-    document.getElementById("closeDetailBtn").addEventListener("click", () => detailOverlay.classList.add("hidden"));
+      document
+        .getElementById("recordPaymentBtn")
+        .addEventListener("click", () => {
+          const order = Orders.get(currentOrderId);
+          const milestone = document.getElementById("paymentMilestone").value;
+          const method = document.getElementById("paymentMethod").value;
+          const amount =
+            milestone === "down"
+              ? Orders.downPaymentDue(order)
+              : Orders.completionPaymentDue(order);
 
-    document.getElementById("advanceStatusBtn").addEventListener("click", () => {
-      const order = Orders.get(currentOrderId);
-      const result = Orders.advance(order);
-      if (!result.ok) {
-        alert(result.reason);
-        return;
-      }
-      renderDetail();
+          const alreadyRecorded = (order.payments || []).some(
+            (p) => p.milestone === milestone,
+          );
+          if (alreadyRecorded) {
+            alert(
+              `${milestone === "down" ? "Down" : "Completion"} payment has already been recorded for this order.`,
+            );
+            return;
+          }
+
+          order.payments = order.payments || [];
+          order.payments.push({
+            milestone,
+            amount,
+            method,
+            date: new Date().toISOString(),
+          });
+          Orders.save(order);
+          renderDetail();
+          refreshAll();
+        });
+
+      document
+        .getElementById("deleteOrderBtn")
+        .addEventListener("click", () => {
+          const order = Orders.get(currentOrderId);
+          if (!order) return;
+          if (confirm(`Delete order for "${order.clientName}"?`)) {
+            Orders.remove(order.id);
+            detailOverlay.classList.add("hidden");
+            refreshAll();
+          }
+        });
+
       refreshAll();
-    });
-
-    document.getElementById("recordPaymentBtn").addEventListener("click", () => {
-      const order = Orders.get(currentOrderId);
-      const milestone = document.getElementById("paymentMilestone").value;
-      const method = document.getElementById("paymentMethod").value;
-      const amount = milestone === "down" ? Orders.downPaymentDue(order) : Orders.completionPaymentDue(order);
-
-      const alreadyRecorded = (order.payments || []).some((p) => p.milestone === milestone);
-      if (alreadyRecorded) {
-        alert(`${milestone === "down" ? "Down" : "Completion"} payment has already been recorded for this order.`);
-        return;
-      }
-
-      order.payments = order.payments || [];
-      order.payments.push({ milestone, amount, method, date: new Date().toISOString() });
-      Orders.save(order);
-      renderDetail();
-      refreshAll();
-    });
-
-    document.getElementById("deleteOrderBtn").addEventListener("click", () => {
-      const order = Orders.get(currentOrderId);
-      if (!order) return;
-      if (confirm(`Delete order for "${order.clientName}"?`)) {
-        Orders.remove(order.id);
-        detailOverlay.classList.add("hidden");
-        refreshAll();
-      }
-    });
-
-    refreshAll();
-  </script>
-</body>
+    </script>
+  </body>
 </html>
